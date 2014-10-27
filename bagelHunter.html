@@ -1,0 +1,240 @@
+
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="1000" height="800" style="border: 1px solid #bbbbbb;" ></canvas>
+    <div id="score-board">
+      Score: <span id="eaten">0</span>
+    </div>
+    <script>
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');    
+      // drawCircle('#ff00ff', '15', '75', 0, 360, null, null);
+      // drawNewImage('http://upload.wikimedia.org/wikipedia/commons/d/d2/Svg_example_square.svg');
+
+
+        if(window.attachEvent) {
+            window.attachEvent('onload', bootGame);
+        } else {
+            if(window.onload) {
+                var curronload = window.onload;
+                var newonload = function() {
+                    curronload();
+                    bootGame();
+                };
+                window.onload = newonload;
+            } else {
+                window.onload = bootGame;
+            }
+        }
+
+
+
+
+        
+      var man = {
+        x: 0,
+        y: 0,
+        step: 20,
+        radius: 50,
+        wasteRate: 2,
+        minRadius: 5,
+      }
+
+      var page = {
+        height: 800,
+        width: 1000,
+      }
+
+      var bagel = {
+        x: 200,
+        y: 200,
+        radius: 30,
+        weight: 5,
+        respawnRate: 5000,
+        moveRate: 500,
+      }
+
+      var score = {
+        points: 0,
+        eaten: 0,
+      }
+
+      var initivals = new Array();
+
+      function bootGame() {
+        //window.setInterval(draw(), 1000);
+        initivals['wasteMan']     = setInterval(function(){ wasteMan() }, 1000);
+        initivals['respawnBagel'] = setInterval(function(){ respawnBagel() }, bagel.respawnRate);
+        console.log("GAME BOOTED");
+      }
+
+
+      document.addEventListener('keydown', function(e) {
+        switch (e.keyCode) {
+          case 37:
+          manLeft();
+          break;
+          case 38:
+          manUp();
+          break
+          case 39:
+          manRight();
+          break;
+          case 40:
+          manDown();
+          break;
+        }        
+      }, false);
+
+
+      function draw(){
+        drawMan(man.x, man.y);
+        drawBagel(bagel.x, bagel.y);
+        if(eatenBagel()){
+          newBagel(page.height, page.width);
+        }
+      }
+
+      function manDown() {
+        man.y = man.y + man.step;
+        draw();
+      }
+
+      function manLeft() {
+        man.x = man.x - man.step;
+        draw();
+      }
+
+      function manRight() {
+        man.x = man.x + man.step;
+        draw();
+      }
+
+      function manUp() {
+        man.y = man.y - man.step;
+        draw();
+      }
+
+      function drawMan(posx, posy) {
+        context.clearRect(0,0,1200,800);
+        drawCircle('#ff0000', '15', man.radius, 360, 0, posx, posy);
+
+        if((man.x + man.radius) > page.width) {
+            man.x = man.x - man.step;
+            drawMan(man.x, man.y);
+        } else if((man.y + man.radius)  > page.height) {
+            man.y = man.y - man.step;
+            drawMan(man.x, man.y);
+        } else if((man.x - man.radius) < 0) {
+            man.x = man.x + man.step;
+            drawMan(man.x, man.y);
+        } else if((man.y - man.radius) < 0) {
+            man.y = man.y + man.step;
+            drawMan(man.x, man.y);
+        }        
+
+      }
+
+      function wasteMan(){
+
+        if(man.radius < man.minRadius) {
+          console.log("MAN WASTED");
+          clearInterval(initivals['wasteMan']);
+          clearInterval(initivals['respawnBagel']);
+          alert("HE'S DEAD JIM.");
+        } else {
+          man.radius = man.radius - man.wasteRate;
+          console.log("WASTE");
+          draw();
+        }
+      }
+
+      function drawBagel(posx, posy){
+        drawCircle('#ccbbbb', '20', bagel.radius, 360, 0, posx, posy);
+      }
+
+
+      function respawnBagel(){
+        newBagel();
+      }
+
+      function drawCircle(strokeStyle, lineWidth, radius, startAngle, endAngle, x, y){
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');
+
+        if(x==null) {
+          var x = canvas.width / 2;
+        }
+
+        if(y==null){
+          var y = canvas.height / 2;
+        }
+
+        var radius = radius;
+        var startAngle = startAngle * Math.PI;
+        var endAngle = endAngle * Math.PI;
+        var counterClockwise = false;
+
+        context.beginPath();
+        context.arc(x, y, radius, startAngle, endAngle, counterClockwise);
+        context.lineWidth = lineWidth;
+
+        // line color
+        context.strokeStyle = strokeStyle;
+        context.stroke();;
+  
+      }
+
+
+      function eatenBagel(){
+        if( (  man.x + man.radius > bagel.x - bagel.radius && man.x - man.radius < bagel.x + bagel.radius ) && ( man.y + man.radius > bagel.y - bagel.radius && man.y - man.radius < bagel.y + bagel.radius )  ){
+          score.eaten++;
+          document.getElementById('eaten').innerHTML = score.eaten;
+          man.radius = man.radius + bagel.weight;
+
+          clearInterval(initivals['respawnBagel']);
+          bagel.respawnRate = bagel.respawnRate - bagel.moveRate;
+          initivals['respawnBagel'] = setInterval(function(){ respawnBagel() }, bagel.respawnRate);
+
+          return true;
+        } else {
+          return false;
+        }
+      }
+
+      function newBagel() {
+          bagel.x = Math.random() * (page.height - 0) + 0;
+          bagel.y = Math.random() * (page.width - 0) + 0;
+
+          if(bagel.x < 0 + bagel.radius || bagel.x > page.width - bagel.radius){
+            newBagel(page.height, page.width);
+          } else if(bagel.y < 0 + bagel.radius || bagel.y > page.height - bagel.radius) {
+            newBagel(page.height, page.width);
+          }
+
+          draw();
+      }
+
+
+      function drawNewImage(img,clipx,clipy,swidth,sheight,x,y,width,height){
+        var canvas = document.getElementById('myCanvas');
+        var context = canvas.getContext('2d');
+
+        var img = new Image();
+        img.onload = function() {
+            context.drawImage(img,clipx,clipy,swidth,sheight,x,y,width,height);
+        }
+        img.src = url;
+      }
+    </script>
+  </body>
+</html>      
